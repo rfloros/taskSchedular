@@ -1,0 +1,73 @@
+* { box-sizing: border-box; }
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  margin: 0;
+  color: #1f2933;
+  background: #f4f6f8;
+}
+header {
+  background: #2b3a55;
+  color: #fff;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+header h1 { margin: 0; font-size: 22px; }
+.summary { font-size: 14px; opacity: .92; }
+.summary span { margin-left: 16px; }
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 24px;
+  background: #fff;
+  border-bottom: 1px solid #dde2e8;
+}
+.tab {
+  border: none;
+  background: none;
+  padding: 14px 18px;
+  font-size: 15px;
+  cursor: pointer;
+  color: #52606d;
+  border-bottom: 3px solid transparent;
+}
+.tab.active { color: #2b3a55; border-bottom-color: #2b3a55; font-weight: 600; }
+
+main { padding: 24px; max-width: 1000px; margin: 0 auto; }
+.panel { display: none; background: #fff; border: 1px solid #e1e6eb; border-radius: 8px; padding: 20px; }
+.panel.active { display: block; }
+h2 { margin-top: 0; }
+
+form.inline, .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+input, select, button, .btn {
+  padding: 9px 12px; font-size: 14px; border-radius: 6px; border: 1px solid #c5ced8;
+}
+button, .btn {
+  background: #2b3a55; color: #fff; border-color: #2b3a55; cursor: pointer; text-decoration: none;
+}
+button:hover, .btn:hover { background: #3a4d70; }
+button.secondary { background: #e1e6eb; color: #1f2933; border-color: #c5ced8; }
+button.secondary:hover { background: #d3dae1; }
+label { font-size: 14px; }
+
+table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #eceff1; font-size: 14px; }
+th { color: #52606d; font-weight: 600; }
+.hint { color: #7b8794; font-size: 13px; }
+.pill { padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+.pill.paid { background: #def7ec; color: #03543f; }
+.pill.due { background: #fde8e8; color: #9b1c1c; }
+.pill.sold { background: #e1effe; color: #1e429f; }
+.pill.unsold { background: #f1f5f9; color: #64748b; }
+
+#toast {
+  position: fixed; bottom: 20px; right: 20px; padding: 12px 18px; border-radius: 8px;
+  color: #fff; font-size: 14px; opacity: 0; transition: opacity .25s; pointer-events: none;
+}
+#toast.show { opacity: 1; }
+#toast.ok { background: #057a55; }
+#toast.err { background: #c81e1e; }

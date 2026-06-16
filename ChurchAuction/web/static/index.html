@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Church Auction</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <h1>Church Auction</h1>
+    <div id="summary" class="summary"></div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="catalog">Catalog</button>
+    <button class="tab" data-tab="checkin">Check-In</button>
+    <button class="tab" data-tab="sales">Record Sale</button>
+    <button class="tab" data-tab="checkout">Checkout</button>
+  </nav>
+
+  <main>
+    <!-- Catalog -->
+    <section id="catalog" class="panel active">
+      <h2>Item Catalog</h2>
+      <div class="row">
+        <form id="import-form">
+          <label>Import items from Excel:
+            <input type="file" id="import-file" accept=".xlsx" required />
+          </label>
+          <button type="submit">Import</button>
+        </form>
+        <a class="btn" href="/api/export">Export results to Excel</a>
+      </div>
+      <form id="item-form" class="inline">
+        <input type="number" id="item-number" placeholder="Item #" required />
+        <input type="text" id="item-name" placeholder="Item name" required />
+        <select id="item-type">
+          <option value="silent">silent</option>
+          <option value="live">live</option>
+        </select>
+        <button type="submit">Add item</button>
+      </form>
+      <table id="items-table">
+        <thead><tr><th>Item #</th><th>Name</th><th>Type</th><th>Sale Price</th><th>Winner</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- Check-in -->
+    <section id="checkin" class="panel">
+      <h2>Check In Bidder</h2>
+      <form id="bidder-form" class="inline">
+        <input type="number" id="bidder-id" placeholder="Bidder ID" required />
+        <input type="text" id="bidder-name" placeholder="Bidder name" required />
+        <button type="submit">Check in</button>
+      </form>
+      <table id="bidders-table">
+        <thead><tr><th>ID</th><th>Name</th><th>Items Won</th><th>Total Owed</th><th>Status</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- Sales -->
+    <section id="sales" class="panel">
+      <h2>Record Sale</h2>
+      <form id="sale-form" class="inline">
+        <input type="number" id="sale-item" placeholder="Item #" required />
+        <input type="number" id="sale-bidder" placeholder="Bidder ID" required />
+        <input type="number" id="sale-price" placeholder="Price" step="0.01" min="0.01" required />
+        <button type="submit">Record sale</button>
+      </form>
+      <p class="hint">Tip: only unsold items can be recorded; price must be positive.</p>
+    </section>
+
+    <!-- Checkout -->
+    <section id="checkout" class="panel">
+      <h2>Checkout &amp; Receipts</h2>
+      <p class="hint">Bidders can check out any time during the event.</p>
+      <table id="checkout-table">
+        <thead><tr><th>ID</th><th>Name</th><th>Total Owed</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <div id="toast"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
