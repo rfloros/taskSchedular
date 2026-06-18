@@ -10,6 +10,7 @@ Then open: http://localhost:8000
 import io
 import os
 import tempfile
+import threading
 
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse, Response
@@ -22,6 +23,12 @@ app = FastAPI(title="Church Auction")
 
 # Single in-memory auction, persisted to JSON after every change.
 auction = storage.load_auction()
+
+# Serializes mutating requests. Several stations on the WiFi can hit the API at
+# the same time; FastAPI runs these sync handlers in a threadpool, so without
+# this lock two desks editing at once could race on the shared dicts or the
+# JSON save. The lock is only held for the (fast) mutate-then-save section.
+write_lock = threading.Lock()
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
@@ -56,12 +63,13 @@ def list_items():
 
 @app.post("/api/items")
 def add_item(item: ItemIn):
-    try:
-        created = auction.addItem(item.itemNumber, item.name, item.itemType)
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    _save()
-    return created.to_dict()
+    with write_lock:
+        try:
+            created = auction.addItem(item.itemNumber, item.name, item.itemType)
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        _save()
+        return created.to_dict()
 
 
 @app.post("/api/items/import")
@@ -69,15 +77,16 @@ async def import_items(file: UploadFile = File(...)):
     contents = await file.read()
     # openpyxl needs a real path or file-like; a BytesIO works.
     parsed = excel_io.import_items(io.BytesIO(contents))
-    added, skipped = 0, 0
-    for item in parsed:
-        if item.itemNumber in auction.items:
-            skipped += 1
-            continue
-        auction.items[item.itemNumber] = item
-        added += 1
-    _save()
-    return {"added": added, "skipped": skipped, "total": len(auction.items)}
+    with write_lock:
+        added, skipped = 0, 0
+        for item in parsed:
+            if item.itemNumber in auction.items:
+                skipped += 1
+                continue
+            auction.items[item.itemNumber] = item
+            added += 1
+        _save()
+        return {"added": added, "skipped": skipped, "total": len(auction.items)}
 
 
 # ---------- Bidders ----------
@@ -88,22 +97,24 @@ def list_bidders():
 
 @app.post("/api/bidders")
 def check_in_bidder(bidder: BidderIn):
-    try:
-        created = auction.checkInBidder(bidder.bidderId, bidder.name)
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    _save()
-    return created.to_dict()
+    with write_lock:
+        try:
+            created = auction.checkInBidder(bidder.bidderId, bidder.name)
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        _save()
+        return created.to_dict()
 
 
 @app.post("/api/bidders/{bidder_id}/checkout")
 def checkout(bidder_id: int):
-    try:
-        bidder = auction.checkout(bidder_id)
-    except ValueError as e:
-        raise HTTPException(404, str(e))
-    _save()
-    return bidder.to_dict()
+    with write_lock:
+        try:
+            bidder = auction.checkout(bidder_id)
+        except ValueError as e:
+            raise HTTPException(404, str(e))
+        _save()
+        return bidder.to_dict()
 
 
 @app.get("/api/bidders/{bidder_id}/receipt")
@@ -124,22 +135,34 @@ def receipt(bidder_id: int):
 # ---------- Sales ----------
 @app.post("/api/sales")
 def record_sale(sale: SaleIn):
-    try:
-        auction.recordSale(sale.itemNumber, sale.bidderId, sale.salePrice)
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    _save()
-    return auction.items[sale.itemNumber].to_dict()
+    with write_lock:
+        try:
+            auction.recordSale(sale.itemNumber, sale.bidderId, sale.salePrice)
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        _save()
+        return auction.items[sale.itemNumber].to_dict()
 
 
 @app.post("/api/sales/{item_number}/undo")
 def undo_sale(item_number: int):
-    try:
-        auction.undoSale(item_number)
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    _save()
-    return auction.items[item_number].to_dict()
+    with write_lock:
+        try:
+            auction.undoSale(item_number)
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        _save()
+        return auction.items[item_number].to_dict()
+
+
+# ---------- Reset ----------
+@app.post("/api/reset")
+def reset_auction():
+    """Clear all items and bidders to start a new auction."""
+    with write_lock:
+        auction.reset()
+        _save()
+        return {"status": "cleared"}
 
 
 # ---------- Reports ----------

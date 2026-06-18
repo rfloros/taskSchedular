@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Church Auction</title>
-  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/style.css?v=4" />
 </head>
 <body>
   <header>
@@ -45,6 +45,10 @@
         <thead><tr><th>Item #</th><th>Name</th><th>Type</th><th>Sale Price</th><th>Winner</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
+
+      <div class="clear-data">
+        <button id="clear-data-btn" class="danger">Clear All Data</button>
+      </div>
     </section>
 
     <!-- Check-in -->
@@ -85,6 +89,18 @@
   </main>
 
   <div id="toast"></div>
-  <script src="/app.js"></script>
+
+  <div id="clear-modal-overlay" class="modal-overlay" hidden>
+    <div class="modal-box">
+      <h3>Clear all auction data?</h3>
+      <p>This will permanently delete every item, bidder, and sale. This cannot be undone.</p>
+      <div class="modal-actions">
+        <button id="clear-modal-cancel" class="secondary">Cancel</button>
+        <button id="clear-modal-yes" class="danger">Yes, I'm sure</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js?v=4"></script>
 </body>
 </html>

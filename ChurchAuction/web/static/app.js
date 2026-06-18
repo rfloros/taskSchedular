@@ -176,5 +176,37 @@ $("#sale-form").addEventListener("submit", async (e) => {
   } catch (err) { toast(err.message, false); }
 });
 
+$("#clear-data-btn")?.addEventListener("click", () => {
+  $("#clear-modal-overlay").hidden = false;
+});
+
+$("#clear-modal-cancel")?.addEventListener("click", () => {
+  $("#clear-modal-overlay").hidden = true;
+});
+
+$("#clear-modal-overlay")?.addEventListener("click", (e) => {
+  if (e.target.id === "clear-modal-overlay") $("#clear-modal-overlay").hidden = true;
+});
+
+$("#clear-modal-yes")?.addEventListener("click", async () => {
+  try {
+    await api("/api/reset", { method: "POST" });
+    toast("All auction data cleared");
+    await refreshAll();
+  } catch (e) {
+    toast(e.message, false);
+  } finally {
+    $("#clear-modal-overlay").hidden = true;
+  }
+});
+
 // ---- init ----
 refreshAll().catch((e) => toast(e.message, false));
+
+// ---- live sync ----
+// Several stations (check-in, sales, checkout) can run at once on the WiFi.
+// Re-pull every few seconds so each screen sees the others' changes without a
+// manual refresh. Only the tables/summary are redrawn -- form inputs are left
+// untouched, so this won't wipe what someone is typing. Errors are swallowed so
+// a brief network blip doesn't spam the toast.
+setInterval(() => refreshAll().catch(() => {}), 4000);
