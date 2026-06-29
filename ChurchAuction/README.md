@@ -27,10 +27,27 @@ cli.py              Terminal interface for quick testing
 data/               Auto-saved auction_state.json
 ```
 
-## Setup
+## Sharing with another laptop (fresh install)
+
+To give this project to someone else so they can run their own auction:
+
+1. **Copy the project folder** to the other laptop (USB drive, shared drive, zip
+   file — anything). The other laptop only needs the project files, not your
+   `data/auction_state.json` (that's your event's data).
+2. **Install Python** on the other laptop if it isn't already:
+   [python.org/downloads](https://www.python.org/downloads/) — during install,
+   check **"Add Python to PATH"**.
+3. **Run `setup.bat`** (double-click it once). It creates the virtual environment
+   and installs all dependencies automatically. Takes about a minute.
+4. **Run `start-auction.bat`** from that point on — setup is only needed once.
+
+That's it. The other laptop is completely independent with its own data.
+
+## Setup (manual, if preferred)
 
 ```
-python -m pip install -r requirements.txt
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
 ```
 
 ## Run the web app (primary interface)
