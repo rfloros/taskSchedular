@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Church Auction</title>
-  <link rel="stylesheet" href="/style.css?v=4" />
+  <link rel="stylesheet" href="/style.css?v=5" />
 </head>
 <body>
   <header>
@@ -41,10 +41,12 @@
         </select>
         <button type="submit">Add item</button>
       </form>
-      <table id="items-table">
-        <thead><tr><th>Item #</th><th>Name</th><th>Type</th><th>Sale Price</th><th>Winner</th><th></th></tr></thead>
-        <tbody></tbody>
-      </table>
+      <div class="table-scroll">
+        <table id="items-table">
+          <thead><tr><th>Item #</th><th>Name</th><th>Type</th><th>Sale Price</th><th>Winner</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
 
       <div class="clear-data">
         <button id="clear-data-btn" class="danger">Clear All Data</button>
@@ -59,10 +61,12 @@
         <input type="text" id="bidder-name" placeholder="Bidder name" required />
         <button type="submit">Check in</button>
       </form>
-      <table id="bidders-table">
-        <thead><tr><th>ID</th><th>Name</th><th>Items Won</th><th>Total Owed</th><th>Status</th></tr></thead>
-        <tbody></tbody>
-      </table>
+      <div class="table-scroll">
+        <table id="bidders-table">
+          <thead><tr><th>ID</th><th>Name</th><th>Items Won</th><th>Total Owed</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </section>
 
     <!-- Sales -->
@@ -80,11 +84,18 @@
     <!-- Checkout -->
     <section id="checkout" class="panel">
       <h2>Checkout &amp; Receipts</h2>
-      <p class="hint">Bidders can check out any time during the event.</p>
-      <table id="checkout-table">
-        <thead><tr><th>ID</th><th>Name</th><th>Total Owed</th><th>Status</th><th>Actions</th></tr></thead>
-        <tbody></tbody>
-      </table>
+      <p class="hint">Charge the total in Square, then mark the bidder as paid. Bidders can check out any time during the event.</p>
+      <div class="checkout-layout">
+        <div class="table-scroll checkout-list">
+          <table id="checkout-table">
+            <thead><tr><th>ID</th><th>Name</th><th>Total Owed</th><th>Status</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="checkout-detail" class="checkout-detail">
+          <p class="hint">Select a bidder to check them out.</p>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -101,6 +112,6 @@
     </div>
   </div>
 
-  <script src="/app.js?v=4"></script>
+  <script src="/app.js?v=5"></script>
 </body>
 </html>

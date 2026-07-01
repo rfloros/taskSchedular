@@ -117,6 +117,17 @@ def checkout(bidder_id: int):
         return bidder.to_dict()
 
 
+@app.post("/api/bidders/{bidder_id}/uncheckout")
+def uncheckout(bidder_id: int):
+    with write_lock:
+        try:
+            bidder = auction.undoCheckout(bidder_id)
+        except ValueError as e:
+            raise HTTPException(404, str(e))
+        _save()
+        return bidder.to_dict()
+
+
 @app.get("/api/bidders/{bidder_id}/receipt")
 def receipt(bidder_id: int):
     try:

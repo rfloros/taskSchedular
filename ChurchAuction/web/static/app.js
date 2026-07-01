@@ -69,9 +69,19 @@ async function refreshItems() {
   });
 }
 
+// Checkout tab is master-detail: a bidder list plus a detail card for the one
+// currently selected. We cache the last-fetched data so clicking a row (and the
+// 4s poll) can redraw instantly without re-fetching, and keep the selection
+// across polls so the open detail card doesn't collapse under someone's hands.
+let selectedCheckoutId = null;
+let lastBidders = [];
+let lastItemById = {};
+
 async function refreshBidders() {
   const bidders = await api("/api/bidders");
   const items = await api("/api/items");
+  lastBidders = bidders;
+  lastItemById = Object.fromEntries(items.map((i) => [i.itemNumber, i]));
   const nameByItem = Object.fromEntries(items.map((i) => [i.itemNumber, i.name]));
 
   $("#bidders-table tbody").innerHTML = bidders
@@ -82,26 +92,76 @@ async function refreshBidders() {
     })
     .join("");
 
-  $("#checkout-table tbody").innerHTML = bidders
+  renderCheckout();
+}
+
+function renderCheckout() {
+  $("#checkout-table tbody").innerHTML = lastBidders
     .map((b) => {
-      const status = b.paid ? `<span class="pill paid">checked out</span>` : `<span class="pill due">due</span>`;
-      const checkoutBtn = b.paid
-        ? `<button class="secondary" disabled>Done</button>`
-        : `<button data-checkout="${b.bidderId}">Check out</button>`;
-      return `<tr><td>${b.bidderId}</td><td>${b.name}</td><td>${money(b.totalOwed)}</td><td>${status}</td>` +
-        `<td><a class="btn" href="/api/bidders/${b.bidderId}/receipt" target="_blank">Receipt</a> ${checkoutBtn}</td></tr>`;
+      const status = b.paid ? `<span class="pill paid">paid</span>` : `<span class="pill due">due</span>`;
+      const sel = b.bidderId === selectedCheckoutId ? " selected" : "";
+      return `<tr class="checkout-row${sel}" data-select="${b.bidderId}">` +
+        `<td>${b.bidderId}</td><td>${b.name}</td><td>${money(b.totalOwed)}</td><td>${status}</td></tr>`;
     })
     .join("");
 
-  document.querySelectorAll("[data-checkout]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      try {
-        await api(`/api/bidders/${btn.dataset.checkout}/checkout`, { method: "POST" });
-        toast("Bidder checked out");
-        await refreshAll();
-      } catch (e) { toast(e.message, false); }
+  const bidder = lastBidders.find((b) => b.bidderId === selectedCheckoutId);
+  $("#checkout-detail").innerHTML = bidder
+    ? checkoutDetailHtml(bidder)
+    : `<p class="hint">Select a bidder to check them out.</p>`;
+
+  document.querySelectorAll("[data-select]").forEach((row) => {
+    row.addEventListener("click", () => {
+      selectedCheckoutId = Number(row.dataset.select);
+      renderCheckout();
     });
   });
+
+  document.querySelector("[data-markpaid]")?.addEventListener("click", async (e) => {
+    try {
+      await api(`/api/bidders/${e.target.dataset.markpaid}/checkout`, { method: "POST" });
+      toast("Marked as paid");
+      await refreshAll();
+    } catch (err) { toast(err.message, false); }
+  });
+
+  document.querySelector("[data-uncheckout]")?.addEventListener("click", async (e) => {
+    try {
+      await api(`/api/bidders/${e.target.dataset.uncheckout}/uncheckout`, { method: "POST" });
+      toast("Payment undone");
+      await refreshAll();
+    } catch (err) { toast(err.message, false); }
+  });
+}
+
+function checkoutDetailHtml(b) {
+  const items = b.itemsWon.map((id) => lastItemById[id]).filter(Boolean);
+  const rows = items.length
+    ? items
+        .map((i) => `<div class="detail-item"><span>${i.name}</span><span>${money(i.salePrice)}</span></div>`)
+        .join("")
+    : `<p class="hint">No items won.</p>`;
+
+  const statusPill = b.paid
+    ? `<span class="pill paid">paid</span>`
+    : `<span class="pill due">balance due</span>`;
+  const reminder = !b.paid && b.totalOwed > 0
+    ? `<p class="charge-note">Charge ${money(b.totalOwed)} in Square, then mark as paid.</p>`
+    : "";
+  const action = b.paid
+    ? `<button class="secondary" data-uncheckout="${b.bidderId}">Undo</button>`
+    : `<button data-markpaid="${b.bidderId}">Mark as paid</button>`;
+
+  return `<div class="detail-name">${b.name}</div>` +
+    `<div class="detail-sub">Bidder #${b.bidderId} ${statusPill}</div>` +
+    `<div class="detail-items">${rows}</div>` +
+    `<div class="detail-total"><span>Total owed</span>` +
+    `<span class="detail-total-amt">${money(b.totalOwed)}</span></div>` +
+    reminder +
+    `<div class="detail-actions">` +
+    `<a class="btn secondary" href="/api/bidders/${b.bidderId}/receipt" target="_blank">Print receipt</a>` +
+    action +
+    `</div>`;
 }
 
 async function refreshAll() {

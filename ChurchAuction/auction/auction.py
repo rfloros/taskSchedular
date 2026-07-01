@@ -48,6 +48,11 @@ class Auction:
         self.bidders[bidderId] = bidder
         return bidder
 
+    def reset(self):
+        """Clear all items and bidders to start a fresh auction."""
+        self.items.clear()
+        self.bidders.clear()
+
     # ---------- Core transaction ----------
     def recordSale(self, itemNumber: int, bidderId: int, salePrice: float):
         item = self._getItem(itemNumber)
@@ -80,6 +85,12 @@ class Auction:
         """Mark a bidder as paid/checked out (they can leave mid-event)."""
         bidder = self._getBidder(bidderId)
         bidder.paid = True
+        return bidder
+
+    def undoCheckout(self, bidderId: int) -> Bidder:
+        """Reverse a checkout (e.g. the wrong bidder was marked paid)."""
+        bidder = self._getBidder(bidderId)
+        bidder.paid = False
         return bidder
 
     # ---------- Data reports ----------
