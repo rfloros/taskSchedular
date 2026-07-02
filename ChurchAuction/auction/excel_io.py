@@ -62,16 +62,30 @@ def import_items(path: str, sheet_name: str = "Items") -> list[Item]:
     return items
 
 
+def _bidder_status(bidder) -> str:
+    if bidder.fullyPaid:
+        return "Paid in full"
+    if bidder.amountPaid > 0:
+        return "Partial"
+    return "Due"
+
+
 def export_auction(auction: Auction, path: str) -> None:
-    """Write Items and Bidders sheets with numeric, formatted prices."""
+    """Write Items, Bidders, and Outstanding sheets with numeric prices."""
     wb = Workbook()
 
     items_sheet = wb.active
     items_sheet.title = "Items"
     bidders_sheet = wb.create_sheet("Bidders")
+    outstanding_sheet = wb.create_sheet("Outstanding")
 
     items_sheet.append(["ItemId", "Name", "Type", "SalePrice", "WinnerId"])
-    bidders_sheet.append(["BidderId", "Name", "Items Won", "TotalOwed", "Paid"])
+    bidders_sheet.append(
+        ["BidderId", "Name", "Items Won", "TotalOwed", "AmountPaid", "BalanceDue", "Status"]
+    )
+    outstanding_sheet.append(
+        ["BidderId", "Name", "Items To Deliver", "Item Numbers", "Amount Still Owed"]
+    )
 
     for item in auction.items.values():
         items_sheet.append(
@@ -86,8 +100,32 @@ def export_auction(auction: Auction, path: str) -> None:
             auction.items[i].name for i in bidder.itemsWon if i in auction.items
         )
         bidders_sheet.append(
-            [bidder.bidderId, bidder.name, won, bidder.totalOwed, "Yes" if bidder.paid else "No"]
+            [
+                bidder.bidderId,
+                bidder.name,
+                won,
+                bidder.totalOwed,
+                bidder.amountPaid,
+                bidder.balanceDue,
+                _bidder_status(bidder),
+            ]
         )
-        bidders_sheet.cell(row=bidders_sheet.max_row, column=4).number_format = CURRENCY_FORMAT
+        row = bidders_sheet.max_row
+        for col in (4, 5, 6):  # TotalOwed, AmountPaid, BalanceDue
+            bidders_sheet.cell(row=row, column=col).number_format = CURRENCY_FORMAT
+
+    # Post-auction to-do list: anyone who still owes money or has items to hand over.
+    for bidder in auction.bidders.values():
+        outstanding = bidder.outstandingItems
+        if bidder.balanceDue <= 0 and not outstanding:
+            continue
+        names = ", ".join(
+            auction.items[i].name for i in outstanding if i in auction.items
+        )
+        numbers = ", ".join(str(i) for i in outstanding)
+        outstanding_sheet.append(
+            [bidder.bidderId, bidder.name, names, numbers, bidder.balanceDue]
+        )
+        outstanding_sheet.cell(row=outstanding_sheet.max_row, column=5).number_format = CURRENCY_FORMAT
 
     wb.save(path)

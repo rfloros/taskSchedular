@@ -31,11 +31,23 @@ document.querySelectorAll(".tab").forEach((btn) => {
 });
 
 // ---- renderers ----
+// A bidder's payment status has three states now: fully paid, partially paid
+// (e.g. checked out then won more), or nothing paid yet.
+function statusPill(b) {
+  if (b.fullyPaid) return `<span class="pill paid">paid</span>`;
+  if (b.amountPaid > 0) return `<span class="pill partial">owes ${money(b.balanceDue)}</span>`;
+  return `<span class="pill due">due</span>`;
+}
+
 async function refreshSummary() {
   const s = await api("/api/summary");
+  const owed = s.outstandingBidders > 0
+    ? `<span>Outstanding: ${money(s.outstandingBalance)} from ${s.outstandingBidders}</span>`
+    : `<span>Outstanding: none</span>`;
   $("#summary").innerHTML =
     `<span>Items: ${s.soldItems}/${s.totalItems} sold</span>` +
-    `<span>Bidders: ${s.checkedOut}/${s.totalBidders} checked out</span>` +
+    `<span>Paid up: ${s.fullyPaid}/${s.totalBidders}</span>` +
+    owed +
     `<span>Revenue: ${money(s.totalRevenue)}</span>`;
 }
 
@@ -87,8 +99,7 @@ async function refreshBidders() {
   $("#bidders-table tbody").innerHTML = bidders
     .map((b) => {
       const won = b.itemsWon.map((id) => nameByItem[id] || `#${id}`).join(", ");
-      const status = b.paid ? `<span class="pill paid">checked out</span>` : `<span class="pill due">due</span>`;
-      return `<tr><td>${b.bidderId}</td><td>${b.name}</td><td>${won}</td><td>${money(b.totalOwed)}</td><td>${status}</td></tr>`;
+      return `<tr><td>${b.bidderId}</td><td>${b.name}</td><td>${won}</td><td>${money(b.totalOwed)}</td><td>${statusPill(b)}</td></tr>`;
     })
     .join("");
 
@@ -98,10 +109,9 @@ async function refreshBidders() {
 function renderCheckout() {
   $("#checkout-table tbody").innerHTML = lastBidders
     .map((b) => {
-      const status = b.paid ? `<span class="pill paid">paid</span>` : `<span class="pill due">due</span>`;
       const sel = b.bidderId === selectedCheckoutId ? " selected" : "";
       return `<tr class="checkout-row${sel}" data-select="${b.bidderId}">` +
-        `<td>${b.bidderId}</td><td>${b.name}</td><td>${money(b.totalOwed)}</td><td>${status}</td></tr>`;
+        `<td>${b.bidderId}</td><td>${b.name}</td><td>${money(b.balanceDue)}</td><td>${statusPill(b)}</td></tr>`;
     })
     .join("");
 
@@ -136,27 +146,39 @@ function renderCheckout() {
 
 function checkoutDetailHtml(b) {
   const items = b.itemsWon.map((id) => lastItemById[id]).filter(Boolean);
+  const toCollect = new Set(b.outstandingItems || []);
   const rows = items.length
     ? items
-        .map((i) => `<div class="detail-item"><span>${i.name}</span><span>${money(i.salePrice)}</span></div>`)
+        .map((i) => {
+          const flag = toCollect.has(i.itemNumber)
+            ? ` <span class="pill due">to collect</span>`
+            : "";
+          return `<div class="detail-item"><span>${i.name}${flag}</span>` +
+            `<span>${money(i.salePrice)}</span></div>`;
+        })
         .join("")
     : `<p class="hint">No items won.</p>`;
 
-  const statusPill = b.paid
-    ? `<span class="pill paid">paid</span>`
-    : `<span class="pill due">balance due</span>`;
-  const reminder = !b.paid && b.totalOwed > 0
-    ? `<p class="charge-note">Charge ${money(b.totalOwed)} in Square, then mark as paid.</p>`
+  const reminder = b.balanceDue > 0
+    ? `<p class="charge-note">Charge ${money(b.balanceDue)} in Square, then mark as paid.</p>`
     : "";
-  const action = b.paid
-    ? `<button class="secondary" data-uncheckout="${b.bidderId}">Undo</button>`
-    : `<button data-markpaid="${b.bidderId}">Mark as paid</button>`;
+
+  // Mark-as-paid whenever a balance is owed; only offer Undo to a bidder who has
+  // actually paid something (a $0 bidder never checked out).
+  let action = "";
+  if (b.balanceDue > 0) {
+    action = `<button data-markpaid="${b.bidderId}">Mark as paid</button>`;
+  } else if (b.amountPaid > 0) {
+    action = `<button class="secondary" data-uncheckout="${b.bidderId}">Undo checkout</button>`;
+  }
 
   return `<div class="detail-name">${b.name}</div>` +
-    `<div class="detail-sub">Bidder #${b.bidderId} ${statusPill}</div>` +
+    `<div class="detail-sub">Bidder #${b.bidderId} ${statusPill(b)}</div>` +
     `<div class="detail-items">${rows}</div>` +
-    `<div class="detail-total"><span>Total owed</span>` +
-    `<span class="detail-total-amt">${money(b.totalOwed)}</span></div>` +
+    `<div class="detail-line"><span>Total won</span><span>${money(b.totalOwed)}</span></div>` +
+    `<div class="detail-line"><span>Paid</span><span>${money(b.amountPaid)}</span></div>` +
+    `<div class="detail-total"><span>Balance due</span>` +
+    `<span class="detail-total-amt">${money(b.balanceDue)}</span></div>` +
     reminder +
     `<div class="detail-actions">` +
     `<a class="btn secondary" href="/api/bidders/${b.bidderId}/receipt" target="_blank">Print receipt</a>` +

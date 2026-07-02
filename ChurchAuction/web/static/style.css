@@ -89,6 +89,7 @@ th { color: #52606d; font-weight: 600; }
 .hint { color: #7b8794; font-size: 13px; }
 .pill { padding: 2px 8px; border-radius: 999px; font-size: 12px; }
 .pill.paid { background: #def7ec; color: #03543f; }
+.pill.partial { background: #fdf6b2; color: #8a5a00; }
 .pill.due { background: #fde8e8; color: #9b1c1c; }
 .pill.sold { background: #e1effe; color: #1e429f; }
 .pill.unsold { background: #f1f5f9; color: #64748b; }
@@ -126,6 +127,10 @@ th { color: #52606d; font-weight: 600; }
 .detail-item {
   display: flex; justify-content: space-between;
   font-size: 14px; padding: 5px 0; border-bottom: 1px solid #eceff1;
+}
+.detail-line {
+  display: flex; justify-content: space-between;
+  font-size: 14px; color: #52606d; padding: 3px 0;
 }
 .detail-total {
   display: flex; justify-content: space-between; align-items: baseline;

@@ -51,14 +51,22 @@ def bidder_receipt_pdf(
         pdf.cell(35, 8, f"${price:,.2f}", align="R", new_x="LMARGIN", new_y="NEXT")
 
     pdf.ln(2)
+    pdf.set_font("Helvetica", "", 11)
+    pdf.cell(140, 8, "Total", border="T")
+    pdf.cell(35, 8, f"${bidder.totalOwed:,.2f}", border="T", align="R",
+             new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(140, 8, "Paid")
+    pdf.cell(35, 8, f"${bidder.amountPaid:,.2f}", align="R",
+             new_x="LMARGIN", new_y="NEXT")
     pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(140, 10, "Total Owed", border="T")
-    pdf.cell(35, 10, f"${bidder.totalOwed:,.2f}", border="T", align="R",
+    pdf.cell(140, 10, "Balance due")
+    pdf.cell(35, 10, f"${bidder.balanceDue:,.2f}", align="R",
              new_x="LMARGIN", new_y="NEXT")
 
     pdf.ln(8)
     pdf.set_font("Helvetica", "I", 10)
-    status = "PAID - Thank you!" if bidder.paid else "Balance due at checkout."
+    status = "PAID IN FULL - Thank you!" if bidder.fullyPaid else \
+        f"Balance due: ${bidder.balanceDue:,.2f}"
     pdf.cell(0, 7, status, new_x="LMARGIN", new_y="NEXT")
 
     out = pdf.output()

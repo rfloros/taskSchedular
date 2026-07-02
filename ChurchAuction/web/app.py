@@ -180,11 +180,14 @@ def reset_auction():
 @app.get("/api/summary")
 def summary():
     sold = [i for i in auction.items.values() if i.sold]
+    bidders = auction.bidders.values()
     return {
         "totalItems": len(auction.items),
         "soldItems": len(sold),
         "totalBidders": len(auction.bidders),
-        "checkedOut": sum(1 for b in auction.bidders.values() if b.paid),
+        "fullyPaid": sum(1 for b in bidders if b.fullyPaid),
+        "outstandingBidders": sum(1 for b in bidders if b.balanceDue > 0),
+        "outstandingBalance": round(sum(b.balanceDue for b in bidders), 2),
         "totalRevenue": auction.getTotalRevenue(),
     }
 

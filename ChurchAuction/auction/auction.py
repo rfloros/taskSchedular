@@ -77,20 +77,31 @@ class Auction:
         bidder = self._getBidder(item.winnerId)
         bidder.itemsWon.remove(itemNumber)
         bidder.totalOwed -= item.salePrice or 0.0
+        # Drop any "handed over" record so a reversed sale leaves no phantom.
+        # (amountPaid is left as-is; refunds are handled off-system.)
+        if itemNumber in bidder.settledItems:
+            bidder.settledItems.remove(itemNumber)
 
         item.salePrice = None
         item.winnerId = None
 
     def checkout(self, bidderId: int) -> Bidder:
-        """Mark a bidder as paid/checked out (they can leave mid-event)."""
+        """Settle a bidder's current balance and hand over their items.
+
+        Sets amountPaid to the full total and snapshots every item won so far as
+        collected. If the bidder later wins more, the new items and balance are
+        automatically outstanding again until this is called once more.
+        """
         bidder = self._getBidder(bidderId)
-        bidder.paid = True
+        bidder.amountPaid = bidder.totalOwed
+        bidder.settledItems = list(bidder.itemsWon)
         return bidder
 
     def undoCheckout(self, bidderId: int) -> Bidder:
         """Reverse a checkout (e.g. the wrong bidder was marked paid)."""
         bidder = self._getBidder(bidderId)
-        bidder.paid = False
+        bidder.amountPaid = 0.0
+        bidder.settledItems = []
         return bidder
 
     # ---------- Data reports ----------
