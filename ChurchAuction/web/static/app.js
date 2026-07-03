@@ -128,6 +128,7 @@ function renderCheckout() {
   });
 
   document.querySelector("[data-markpaid]")?.addEventListener("click", async (e) => {
+    if (!confirm("Are you sure you want to mark this bidder as paid?")) return;
     try {
       await api(`/api/bidders/${e.target.dataset.markpaid}/checkout`, { method: "POST" });
       toast("Marked as paid");

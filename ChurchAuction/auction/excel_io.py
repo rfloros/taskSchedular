@@ -81,7 +81,7 @@ def export_auction(auction: Auction, path: str) -> None:
 
     items_sheet.append(["ItemId", "Name", "Type", "SalePrice", "WinnerId"])
     bidders_sheet.append(
-        ["BidderId", "Name", "Items Won", "TotalOwed", "AmountPaid", "BalanceDue", "Status"]
+        ["BidderId", "Name", "Items Won", "Item Numbers", "TotalOwed", "AmountPaid", "BalanceDue", "Status"]
     )
     outstanding_sheet.append(
         ["BidderId", "Name", "Items To Deliver", "Item Numbers", "Amount Still Owed"]
@@ -99,11 +99,13 @@ def export_auction(auction: Auction, path: str) -> None:
         won = ", ".join(
             auction.items[i].name for i in bidder.itemsWon if i in auction.items
         )
+        numbers = ", ".join(str(i) for i in bidder.itemsWon)
         bidders_sheet.append(
             [
                 bidder.bidderId,
                 bidder.name,
                 won,
+                numbers,
                 bidder.totalOwed,
                 bidder.amountPaid,
                 bidder.balanceDue,
@@ -111,7 +113,7 @@ def export_auction(auction: Auction, path: str) -> None:
             ]
         )
         row = bidders_sheet.max_row
-        for col in (4, 5, 6):  # TotalOwed, AmountPaid, BalanceDue
+        for col in (5, 6, 7):  # TotalOwed, AmountPaid, BalanceDue
             bidders_sheet.cell(row=row, column=col).number_format = CURRENCY_FORMAT
 
     # Post-auction to-do list: anyone who still owes money or has items to hand over.
