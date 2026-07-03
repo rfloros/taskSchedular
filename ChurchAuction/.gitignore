@@ -4,3 +4,4 @@ data/auction_state.json
 *.tmp
 .venv/
 venv/
+.claude/
