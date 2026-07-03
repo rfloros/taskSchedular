@@ -16,8 +16,29 @@ from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.datastructures import Headers
+from starlette.types import Scope
 
 from auction import excel_io, receipts, storage
+
+
+class NoCacheStaticFiles(StaticFiles):
+    """Serve the frontend without browser caching.
+
+    A stale cached index.html/app.js/style.css was repeatedly serving old code
+    after updates (e.g. new confirm dialogs not appearing). Forcing no-cache and
+    never returning "304 Not Modified" guarantees every load is the current file.
+    """
+
+    def is_not_modified(self, response_headers: Headers, request_headers: Headers) -> bool:
+        return False  # never let the browser reuse a cached copy
+
+    async def get_response(self, path: str, scope: Scope):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
 
 app = FastAPI(title="Church Auction")
 
@@ -205,4 +226,5 @@ def export_xlsx():
 
 
 # Static frontend (mounted last so /api routes take priority).
-app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
+# NoCacheStaticFiles prevents the browser from serving stale HTML/JS/CSS.
+app.mount("/", NoCacheStaticFiles(directory=STATIC_DIR, html=True), name="static")
